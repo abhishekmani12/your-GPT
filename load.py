@@ -1,0 +1,108 @@
+import os
+import subprocess
+from tqdm import tqdm
+from doc2docx import convert
+
+
+import chromadb
+from chromadb.config import Settings
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.docstore.document import Document
+from langchain.vectorstores import Chroma
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
+
+
+vectorstore_folder_path = "vectorstore"
+document_ingest_path = "documents"
+embeddings_model = "all-MiniLM-L6-v2"
+
+CHROMA_SETTINGS = Settings(
+        persist_directory=vectorstore_folder_path,
+        anonymized_telemetry=False
+)
+
+# Maps extensions to doc loaders
+ext2loader = {
+    ".csv": (CSVLoader, {}),
+    ".docx": (Docx2txtLoader, {}),
+    ".doc": (Docx2txtLoader, {}),
+    ".pdf": (PyMuPDFLoader, {}),
+    ".txt": (TextLoader, {"encoding": "utf8"}),
+}
+
+
+#convert "doc" to "docx"
+def doc2docx(file_path):
+    subprocess.call(['lowriter', '--convert-to docx', file_path])
+    return file_path.replace("doc","docx")
+
+
+#def img2pdf(file_path):
+#add ocr support by coverting images to pdf with conv as a separate func   
+#Document Loader   
+def load_document(file_path, existing_files):
+    
+    extension = "." + file_path.rsplit(".")[1]
+    
+    if extension in ext2loader:
+        if file_path not in existing_files:
+            
+            loader_type, loader_args = ext2loader[extension]
+            loader = loader_type(file_path, **loader_args)
+            load=loader.load()
+            return load
+        else:
+            return None
+
+    raise ValueError(f" '{ext}' file type not supported")
+    
+        
+def split_document(file_path, existing_files=[]):
+   
+    document = load_document(file_path, existing_files)
+    if not document:
+        print("Vector Embeddings for this file already exists")
+        return None
+        
+    print("Loaded")
+    
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
+    split_text = text_splitter.split_documents(document)
+    
+    return split_text
+
+def check4vectorstore(directory, embeddings):
+
+    db = Chroma(persist_directory=directory, embedding_function=embeddings)
+    
+    if not db.get()['documents']:
+        return False
+    
+    return True
+
+def embed(file_path):
+  
+    embeddings = HuggingFaceEmbeddings(model_name=embeddings_model)
+    
+    chroma_client = chromadb.PersistentClient(settings=CHROMA_SETTINGS , path=vectorstore_folder_path)
+
+    if check4vectorstore(vectorstore_folder_path, embeddings):
+       
+        db = Chroma(persist_directory=vectorstore_folder_path, embedding_function=embeddings, client_settings=CHROMA_SETTINGS, client=chroma_client)
+        collection = db.get()
+        text = split_document(file_path,[metadata['source'] for metadata in collection['metadatas']])
+        if text:
+            db.add_documents(text)
+        
+            
+        
+    else:
+        
+        text = split_document(file_path)
+        db = Chroma.from_documents(text, embeddings, persist_directory=vectorstore_folder_path, client_settings=CHROMA_SETTINGS, client=chroma_client)
+        
+        
+    db.persist()
+    db = None
