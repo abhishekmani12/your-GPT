@@ -2,7 +2,8 @@ import os
 import subprocess
 from tqdm import tqdm
 from doc2docx import convert
-
+import img2pdf
+import ocrmypdf
 
 import chromadb
 from chromadb.config import Settings
@@ -32,16 +33,35 @@ ext2loader = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
-
+#UTIL FUNCTIONS
 #convert "doc" to "docx"
+#proper integration pending
 def doc2docx(file_path):
     subprocess.call(['lowriter', '--convert-to docx', file_path])
     return file_path.replace("doc","docx")
 
+def image2pdf(file_path):
+    
+    fname=file_path.rsplit("/")[-1].split(".")[0]
+    pdf_path=f"documents/{fname}.pdf"
+    
+    with open(pdf_path,"wb") as f:
+        f.write(img2pdf.convert(file_path))
+    
+    return pdf_path
+    
+    
+def ocr(file_path):
+    
+    fname=file_path.rsplit("/")[-1]
+    pdf_path=f"documents/OCR-{fname}"
+    print(pdf_path)
+    ocrmypdf.ocr(file_path, pdf_path, deskew=True)
+    
+    return pdf_path
 
-#def img2pdf(file_path):
-#add ocr support by coverting images to pdf with conv as a separate func   
-#Document Loader   
+
+
 def load_document(file_path, existing_files):
     
     extension = "." + file_path.rsplit(".")[1]
@@ -82,6 +102,7 @@ def check4vectorstore(directory, embeddings):
     
     return True
 
+#MAIN FUNCTION CALL
 def embed(file_path):
   
     embeddings = HuggingFaceEmbeddings(model_name=embeddings_model)
