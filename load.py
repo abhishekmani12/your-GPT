@@ -28,17 +28,10 @@ CHROMA_SETTINGS = Settings(
 ext2loader = {
     ".csv": (CSVLoader, {}),
     ".docx": (Docx2txtLoader, {}),
-    ".doc": (Docx2txtLoader, {}),
     ".pdf": (PyMuPDFLoader, {}),
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
-#UTIL FUNCTIONS
-#convert "doc" to "docx"
-#proper integration pending
-def doc2docx(file_path):
-    subprocess.call(['lowriter', '--convert-to docx', file_path])
-    return file_path.replace("doc","docx")
 
 def image2pdf(file_path):
     
