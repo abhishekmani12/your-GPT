@@ -52,8 +52,19 @@ def wiki(keyword, limit):
 
     content=[]
     curr=0
+    
+    p1 = re.compile('\[[0-9]*[a-z]*\]')
+    p2 = re.compile('\\n[0-9]*')
+    
     for para in html_content.select('p'):
-        content.append(para.getText())
+        
+        text=para.getText()
+        
+        clean_text=p1.sub('', text)
+        clean_text=p2.sub('', clean_text)
+        
+        clean_text=" ".join(clean_text.split())
+        content.append(clean_text)
         curr+=1
 
         if curr == limit:
