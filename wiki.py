@@ -1,8 +1,12 @@
 import spacy
 import pandas
 import requests
+import re
+import wikipedia
+from tqdm import tqdm
 
 number_of_results = 1
+
 headers = {
     'User-Agent': 'Local-Mini-GPT'
 }
@@ -20,25 +24,54 @@ def get_keywords(text, medical):
     
     nlp = spacy.load(model)
     doc = nlp(text)
-    keywords=list(doc.ents)
+    keywords_obj=doc.ents
     
-    return keywords
+    string=str(keywords_obj)
+    keywords=string.replace("(","").replace(")","").split(",")
 
-def wiki(keywords):
-    
-    export={}
-    
-    for key in keywords:
-        
-        parameters = {'q': key, 'limit': number_of_results}
-        response = requests.get(url, headers=headers, params=parameters)
-        
-        export[key] = response
+    return set(keywords)
 
-def get_details(text, medical=False):
+def wiki(keyword, limit):
+    
+    parameters = {'q': keyword, 'limit': number_of_results}
+    response=requests.get(url, headers=headers, params=parameters)
+
+    desc=response.json()['pages'][0]['description']
+
+    index=0
+    if desc == 'Topics referred to by the same term':
+        index=1
+
+    closest_keyword=wikipedia.search(keyword)[index]
+    closest_keyword=closest_keyword.replace(" ","_")
+
+
+    raw_result=requests.get(f'https://en.wikipedia.org/wiki/{closest_keyword}')
+
+    html_content=BeautifulSoup(raw_result.text, "html.parser")
+
+    content=[]
+    curr=0
+    for para in html_content.select('p'):
+        content.append(para.getText())
+        curr+=1
+
+        if curr == limit:
+            break
+            
+    return content
+    
+
+
+def get_details(text, medical=False, limit=3):
 
     keywords=get_keywords(text, medical)
     
-    details_dict=wiki(keywords, lines)
+    details_dict={}
     
-    return details_dict
+    for key in tqdm(keywords):
+        
+        print(key)
+        details_dict[key]=wiki(key, limit)
+    
+    return details_dict, keywords 
