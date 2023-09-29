@@ -28,14 +28,20 @@ def get_keywords(text, medical):
     
     string=str(keywords_obj)
     keywords=string.replace("(","").replace(")","").split(",")
-
+    
+    keywords=list(filter(None, keywords))
+    
     return set(keywords)
 
 def wiki(keyword, limit):
     
     parameters = {'q': keyword, 'limit': number_of_results}
     response=requests.get(url, headers=headers, params=parameters)
-
+    
+    if len(response.json()['pages']) == 0:
+        print(f"No content found for keyword - {keyword}")
+        return ["No content found"]
+    
     desc=response.json()['pages'][0]['description']
     key=response.json()['pages'][0]['key']
 
@@ -83,6 +89,10 @@ def wiki(keyword, limit):
 def get_details(text, medical=False, limit=3):
 
     keywords=get_keywords(text, medical)
+    
+    if len(keywords) == 0:
+        print("No keywords found")
+        return None
     
     details_dict={}
     
