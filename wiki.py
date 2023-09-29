@@ -5,6 +5,8 @@ import re
 import wikipedia
 from tqdm import tqdm
 
+#!python -m spacy download en_core_web_sm #Execute on first run
+
 number_of_results = 1
 
 headers = {
