@@ -37,13 +37,20 @@ def wiki(keyword, limit):
     response=requests.get(url, headers=headers, params=parameters)
 
     desc=response.json()['pages'][0]['description']
+    key=response.json()['pages'][0]['key']
 
     index=0
     if desc == 'Topics referred to by the same term':
         index=1
+        
 
     closest_keyword=wikipedia.search(keyword)[index]
     closest_keyword=closest_keyword.replace(" ","_")
+    
+    if index == 1:
+        print(f"{keyword} not found. Redirecting to {closest_keyword}")
+    elif key != keyword:
+        print(f"{keyword} not found. Redirecting to {key}")
 
 
     raw_result=requests.get(f'https://en.wikipedia.org/wiki/{closest_keyword}')
@@ -72,7 +79,6 @@ def wiki(keyword, limit):
             
     return content
     
-
 
 def get_details(text, medical=False, limit=3):
 
