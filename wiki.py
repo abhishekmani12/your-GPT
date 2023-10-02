@@ -10,7 +10,7 @@ from tqdm import tqdm
 number_of_results = 1
 
 headers = {
-    'User-Agent': 'Local-Mini-GPT'
+    'User-Agent': ''
 }
 
 base_url = 'https://api.wikimedia.org/core/v1/wikipedia/'
