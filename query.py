@@ -2,8 +2,8 @@ from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.vectorstores import Chroma
-from langchain.llms import GPT4All, CTransfomers
-
+from langchain.llms import GPT4All
+from langchain.llms import CTransformers
 from langchain import HuggingFacePipeline
 from langchain import PromptTemplate, LLMChain
 
@@ -67,12 +67,12 @@ def get_pipe(model_type):
     return RQA
 
 
-def get_answer(query, RQA, db=None, model_type):
+def get_answer(query, RQA, model_type, db=None):
        
     if query.strip() == "":
         return None
     
-     document_content={}
+    document_content={}
     
     if model_type == "GPT4ALL":
         
