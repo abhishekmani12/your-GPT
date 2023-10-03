@@ -12,12 +12,14 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import HuggingFaceInstructEmbeddings
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
 
 
 vectorstore_folder_path = "vectorstore"
 document_ingest_path = "documents"
-embeddings_model = "all-MiniLM-L6-v2"
+#embeddings_model = "all-MiniLM-L6-v2"
+embeddings_model = "hkunlp/instructor-large"
 
 CHROMA_SETTINGS = Settings(
         persist_directory=vectorstore_folder_path,
@@ -81,7 +83,7 @@ def split_document(file_path, existing_files=[]):
         
     print("Document Loaded")
     
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     split_text = text_splitter.split_documents(document)
     
     print("Document Split")
@@ -100,7 +102,7 @@ def check4vectorstore(directory, embeddings):
 #MAIN FUNCTION CALL
 def embed(file_path):
   
-    embeddings = HuggingFaceEmbeddings(model_name=embeddings_model)
+    embeddings = HuggingFaceInstructEmbeddings(model_name=embeddings_model)
     
     chroma_client = chromadb.PersistentClient(settings=CHROMA_SETTINGS , path=vectorstore_folder_path)
 
