@@ -105,7 +105,9 @@ def embed(file_path):
     chroma_client = chromadb.PersistentClient(settings=CHROMA_SETTINGS , path=vectorstore_folder_path)
 
     if check4vectorstore(vectorstore_folder_path, embeddings):
-       
+        
+        print("Exisiting vectorDB found")
+        
         db = Chroma(persist_directory=vectorstore_folder_path, embedding_function=embeddings, client_settings=CHROMA_SETTINGS, client=chroma_client)
         collection = db.get()
         
@@ -119,8 +121,13 @@ def embed(file_path):
     else:
         
         text = split_document(file_path)
+        
+        print("Creating new vectorDB")
         db = Chroma.from_documents(text, embeddings, persist_directory=vectorstore_folder_path, client_settings=CHROMA_SETTINGS, client=chroma_client)
         
         
     db.persist()
     db = None
+    
+    print("Document Embedded!")
+    return True
