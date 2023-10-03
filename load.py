@@ -79,10 +79,12 @@ def split_document(file_path, existing_files=[]):
         print("Vector Embeddings for this file already exists")
         return None
         
-    print("Loaded")
+    print("Document Loaded")
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
     split_text = text_splitter.split_documents(document)
+    
+    print("Document Split")
     
     return split_text
 
@@ -92,8 +94,8 @@ def check4vectorstore(directory, embeddings):
     
     if not db.get()['documents']:
         return False
-    
-    return True
+    else:
+        return True
 
 #MAIN FUNCTION CALL
 def embed(file_path):
@@ -106,12 +108,14 @@ def embed(file_path):
        
         db = Chroma(persist_directory=vectorstore_folder_path, embedding_function=embeddings, client_settings=CHROMA_SETTINGS, client=chroma_client)
         collection = db.get()
-        text = split_document(file_path,[metadata['source'] for metadata in collection['metadatas']])
+        
+        existing_docs=[md['source'] for md in collection['metadatas']]
+        
+        text = split_document(file_path, existing_docs)
+        
         if text:
             db.add_documents(text)
-        
             
-        
     else:
         
         text = split_document(file_path)
