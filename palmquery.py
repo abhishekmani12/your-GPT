@@ -1,11 +1,16 @@
 import google.generativeai as palm
 import re
+import os
+from dotenv import load_dotenv
 
-API_KEY="AIzaSyBNgfp1r9TLO5StflsjKQ8ZHZQakJ4X2xQ"
+load_dotenv()
+
+
+API_KEY=os.getenv('PALM_API_KEY')
 
 def ask_palm(context, query):
     
-    palm.configure(api_key="AIzaSyBNgfp1r9TLO5StflsjKQ8ZHZQakJ4X2xQ")
+    palm.configure(api_key=API_KEY)
     
     defaults = {
         
