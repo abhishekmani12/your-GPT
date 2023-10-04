@@ -30,14 +30,23 @@ target_source_chunks = 4
 
 preprompt="""You are a helpful assistant, you will use the provided context to answer user questions.
 Read the given context before answering questions and think step by step. If you can not answer a user question based on 
-the provided context, inform the user. Do not use any other information for answering user. Provide a detailed answer to the question."""
+the provided context, inform the user. Do not provide false facts. Provide a detailed answer to the question."""
 
-template = ("<s>[INST]" + preprompt + """ 
+m_template = ("<s>[INST]" + preprompt + """ 
 
                                             Context: {context} 
                                             User: {question}""" + "[/INST]" )
 
-mistral_prompt = PromptTemplate(template=template, input_variables=["question","context"])
+mistral_prompt = PromptTemplate(template=m_template, input_variables=["question","context"])
+
+
+
+f_template =( "[INST]" + "<<SYS>>\n" + preprompt + "\n<</SYS>>\n\n" + """
+                                                                    
+                                                                    Context: {context}
+                                                                    User: {question}""" + "[/INST]")
+
+falcon_prompt = PromptTemplate(template=f_template, input_variables=["context", "question"])
 
 
 CHROMA_SETTINGS = Settings(
@@ -64,7 +73,7 @@ def load_model(model_id, model_basename):
     return LlamaCpp(**kwargs)
 
 
-def get_pipe(model_id, model_basename):
+def get_pipe(model_id, model_basename, model_type):
 
     embeddings = HuggingFaceInstructEmbeddings(model_name=embeddings_model)
     
@@ -86,6 +95,13 @@ def get_pipe(model_id, model_basename):
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
     
     llm=load_model(model_id, model_basename)
+
+    if model_type == "mistral":
+        prompt=mistral_prompt
+    elif model_type == "falcon:
+        prompt=falcon_prompt
+    else:
+        raise Exception(f"Model Type - {model_type} Invalid")
     
     RQA = RetrievalQA.from_chain_type( 
         llm=llm, 
@@ -93,7 +109,7 @@ def get_pipe(model_id, model_basename):
         retriever=retriever, 
         return_source_documents=True, 
         callbacks=callback_manager, 
-        chain_type_kwargs={"prompt": mistral_prompt}
+        chain_type_kwargs={"prompt": prompt}
         )
     
     return RQA
@@ -106,20 +122,17 @@ def get_answer(query, RQA, model_type):
     
     document_content={}
     
-    if model_type == "mistral":
         
-        start = time.time()
+    start = time.time()
         
-        res = RQA(query)
-        answer, docs = res['result'], res['source_documents']
+    res = RQA(query)
+    answer, docs = res['result'], res['source_documents']
         
-        end = time.time()
-        time_taken=round(end-start, 2)
+    end = time.time()
+    time_taken=round(end-start, 2)
 
        
-        for document in docs:
-            document_content[document.metadata["source"]] = document.page_content
+    for document in docs:
+        document_content[document.metadata["source"]] = document.page_content
     
-    return query, answer, document_content, time_taken    
-       
- 
+    return query, answer, document_content, time_taken  
