@@ -17,6 +17,7 @@ from langchain.memory import ConversationBufferMemory
 
 import os
 import time
+from palmquery import ask_palm
 
 import chromadb
 from chromadb.config import Settings
@@ -115,24 +116,38 @@ def get_pipe(model_id, model_basename, model_type):
     return RQA
 
 
-def get_answer(query, RQA, model_type):
+def get_answer(query, RQA=None, model_type=None, internet=False):
        
     if query.strip() == "":
         return None
-    
-    document_content={}
-    
         
-    start = time.time()
-        
-    res = RQA(query)
-    answer, docs = res['result'], res['source_documents']
-        
-    end = time.time()
-    time_taken=round(end-start, 2)
+    if internet:
 
-       
+        docs = db.similarity_search(query)
+        context=""""""
+
+        start = time.time()
+        
+        for document in docs:
+            context += document.page_content
+        
+        answer=ask_palm(context, query)
+
+        end=time.time()
+
+    else:
+        
+        document_content={}   
+        start = time.time()
+            
+        res = RQA(query)
+        answer, docs = res['result'], res['source_documents']
+            
+        end = time.time()
+        
     for document in docs:
         document_content[document.metadata["source"]] = document.page_content
+        
+    time_taken=round(end-start, 2)
     
     return query, answer, document_content, time_taken  
