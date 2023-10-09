@@ -3,7 +3,7 @@ import subprocess
 from tqdm import tqdm
 from doc2docx import convert
 import img2pdf
-import ocrmypdf
+#import ocrmypdf
 
 import chromadb
 from chromadb.config import Settings
@@ -34,6 +34,8 @@ ext2loader = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
 
 def image2pdf(file_path):
     
@@ -44,8 +46,8 @@ def image2pdf(file_path):
         f.write(img2pdf.convert(file_path))
     
     return pdf_path
-    
-    
+
+
 def ocr(file_path):
     
     fname=file_path.rsplit("/")[-1]
@@ -54,7 +56,6 @@ def ocr(file_path):
     ocrmypdf.ocr(file_path, pdf_path, deskew=True)
     
     return pdf_path
-
 
 
 def load_document(file_path, existing_files):
@@ -83,7 +84,7 @@ def split_document(file_path, existing_files=[]):
         
     print("Document Loaded")
     
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
     split_text = text_splitter.split_documents(document)
     
     print("Document Split")
