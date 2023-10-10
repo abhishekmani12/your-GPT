@@ -3,7 +3,7 @@ import subprocess
 from tqdm import tqdm
 from doc2docx import convert
 import img2pdf
-#import ocrmypdf
+import ocrmypdf
 
 import chromadb
 from chromadb.config import Settings
@@ -49,9 +49,14 @@ def image2pdf(file_path):
 
 
 def ocr(file_path):
-    
+
     fname=file_path.rsplit("/")[-1]
-    pdf_path=f"documents/OCR-{fname}"
+    ls=fname.rsplit(".")
+    
+    if ls[1] in ['jpg', 'jpeg', 'png']:
+        file_path=image2pdf(file_path)
+        
+    pdf_path=f"documents/OCR-{ls[0]}.pdf"
     print(pdf_path)
     ocrmypdf.ocr(file_path, pdf_path, deskew=True)
     
@@ -72,7 +77,7 @@ def load_document(file_path, existing_files):
         else:
             return None
 
-    raise ValueError(f" '{ext}' file type not supported")
+    raise ValueError(f" '{extension}' file type not supported")
     
         
 def split_document(file_path, existing_files=[]):
@@ -101,8 +106,11 @@ def check4vectorstore(directory, embeddings):
         return True
 
 #MAIN FUNCTION CALL
-def embed(file_path):
-  
+def embed(file_path, scanned=False):
+
+    if scanned:
+        file_path=ocr(file_path)
+    
     embeddings = HuggingFaceInstructEmbeddings(model_name=embeddings_model)
     
     chroma_client = chromadb.PersistentClient(settings=CHROMA_SETTINGS , path=vectorstore_folder_path)
