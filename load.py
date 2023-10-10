@@ -34,8 +34,8 @@ ext2loader = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
+CHUNK_SIZE = 256
+CHUNK_OVERLAP = 32
 
 def image2pdf(file_path):
     
