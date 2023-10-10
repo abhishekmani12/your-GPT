@@ -22,10 +22,6 @@ from palmquery import ask_palm
 import chromadb
 from chromadb.config import Settings
 
-CHROMA_SETTINGS = Settings(
-        persist_directory=vectorstore_folder_path,
-        anonymized_telemetry=False
-)
 
 
 vectorstore_folder_path = "vectorstore"
@@ -42,9 +38,16 @@ LLAMA = [
     "llama-2-7b-chat.Q4_K_M.gguf"
 ]
 
-gpt4all_model = "MODELS/gpt4all-converted.bin"
+gpt4all_model = "MODELS/ggml-model-gpt4all-falcon-q4_0.bin" #convert to gguf - pending
 
 target_source_chunks = 3
+
+CHROMA_SETTINGS = Settings(
+        persist_directory=vectorstore_folder_path,
+        anonymized_telemetry=False
+)
+
+
 
 preprompt="""You are a helpful assistant, you will use the provided context to answer user questions.
 Read the given context before answering questions and think step by step. If you can not answer a user question based on 
@@ -64,7 +67,7 @@ l_template =( "[INST]" + "<<SYS>>\n" + preprompt + "\n<</SYS>>\n\n" + """
 Context: {context}
 User: {question}""" + "[/INST]")
 
-llama_prompt = PromptTemplate(template=f_template, input_variables=["context", "question"])
+llama_prompt = PromptTemplate(template=l_template, input_variables=["context", "question"])
 
 ###############################################################################################################################################
 g_template =("""
@@ -73,6 +76,8 @@ Context: {context}
 ---
 Question: {question}
 Answer: Let's think step by step.""")
+
+gpt4all_prompt = PromptTemplate(template=g_template, input_variables=["context", "question"])
 
 ###############################################################################################################################################
 
@@ -89,15 +94,15 @@ def load_model(model_id, model_basename):
     kwargs = { 
         
         "model_path": model_path, 
-        "n_ctx": 4096, 
+        "top_p":0.4,
+        "top_k":40,
+        "temperature":0.4,
+        "repeat_penalty":1.18,
+        "n_ctx":2048, 
         "max_tokens": 4096, 
-        "n_batch": 512 }
+        "n_batch": 128 }
         
     return LlamaCpp(**kwargs)
-
-
-def load_gpt4all_model():
-    
 
 def get_pipe(model_type):
 
@@ -135,8 +140,22 @@ def get_pipe(model_type):
         model_basename=LLAMA[1]
 
     elif model_type == "gpt4all":
-        gpt4all_llm = GPT4All(model=gpt4all_model, callback_manager=callback_manager, verbose=True)
-        return gt4all_llm
+
+        gpt4all_llm = LlamaCpp(
+                        model_path=gpt4all_model, 
+                        top_p=0.4,
+                        top_k=40,
+                        temperature=0.4,
+                        repeat_penalty=1.18,
+                        n_ctx=4096, 
+                        max_tokens=4096, 
+                        n_batch=512 
+                        )
+        
+        return gpt4all_llm, db
+        
+    elif model_type == "bard":
+        return None,db
         
     else:
         raise Exception(f"Model Type - {model_type} Invalid")
@@ -156,7 +175,8 @@ def get_pipe(model_type):
 
 
 def get_answer(query, RQA=None, gpt4all=False, internet=False):
-       
+    document_content={}  
+    
     if query.strip() == "":
         return None
     
@@ -165,6 +185,8 @@ def get_answer(query, RQA=None, gpt4all=False, internet=False):
     
     if internet or gpt4all:
         
+        db=RQA[1]
+        
         docs = db.similarity_search(query, k=target_source_chunks)
         context=""""""
 
@@ -172,20 +194,21 @@ def get_answer(query, RQA=None, gpt4all=False, internet=False):
         
         for document in docs:
             context += document.page_content
+        
+        print(context)
 
         if internet:
             answer=ask_palm(context, query)
         else:
             
-            gpt4all_template = PromptTemplate(template=g_template, input_variables=["context", "question"]).partial(context=context)
-            llm_chain = LLMChain(prompt=gtp4all_template, llm=RQA)
+            
+            llm_chain = LLMChain(prompt=gpt4all_prompt, llm=RQA[0])
             answer=llm_chain.run(query)
             
         end=time.time()
 
     else:
-        
-        document_content={}   
+         
         start = time.time()
             
         res = RQA(query)
