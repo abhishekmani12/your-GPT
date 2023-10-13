@@ -4,6 +4,8 @@ from tqdm import tqdm
 from doc2docx import convert
 import img2pdf
 import ocrmypdf
+import pandas as pd
+import sweetviz
 
 import chromadb
 from chromadb.config import Settings
@@ -36,6 +38,19 @@ ext2loader = {
 
 CHUNK_SIZE = 256
 CHUNK_OVERLAP = 32
+
+
+def analyze(path):
+    
+    try:
+        df=pd.read_csv(path)
+        my_report = sweetviz.analyze([df, "Train"])
+        my_report.show_html('Report.html')
+
+        return my_report
+    
+    except Exception as e:
+        print("Error: ", e)
 
 def image2pdf(file_path):
     
