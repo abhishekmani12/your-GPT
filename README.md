@@ -14,4 +14,4 @@ My bible for this project right now: [Langchain Docs](https://python.langchain.c
 - `palmquery.py`: Extension script to call palm-API
 - `wiki.py`: Wikipedia Context generation script based on input sentence. Know more from my other [repo](https://github.com/abhishekmani12/Wiki-Content-Retriever)
 
-Base framework scripts complete. Addition of utility/tool scripts ongoing.
+Base framework scripts complete. Addition of utility/tool scripts ongoing. Implementing NeMo guardrails for topical awareness. 
