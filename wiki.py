@@ -5,20 +5,22 @@ import re
 import wikipedia
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+from config import USER_AGENT
+
 
 #!python -m spacy download en_core_web_sm #Execute on first run
 
 number_of_results = 1
 
 headers = {
-    'User-Agent': 'Local-Mini-GPT'
+    'User-Agent': USER_AGENT
 }
 
 base_url = 'https://api.wikimedia.org/core/v1/wikipedia/'
 endpoint = '/search/page'
 url = base_url + 'en' + endpoint
 
-def get_keywords(text, medical):
+def get_keywords(text, medical=False):
     
     if medical:
         model="en_core_sci_lg"
