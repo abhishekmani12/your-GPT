@@ -17,6 +17,7 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.embeddings import HuggingFaceInstructEmbeddings
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
 
+from config import emb_chunk_size, emb_chunk_overlap
 
 vectorstore_folder_path = "vectorstore"
 document_ingest_path = "documents"
@@ -36,8 +37,8 @@ ext2loader = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
-CHUNK_SIZE = 256
-CHUNK_OVERLAP = 32
+CHUNK_SIZE = emb_chunk_size
+CHUNK_OVERLAP = emb_chunk_overlap
 
 
 def analyze(path):

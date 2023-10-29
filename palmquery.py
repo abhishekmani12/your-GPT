@@ -2,9 +2,9 @@ import google.generativeai as palm
 import re
 import os
 from dotenv import load_dotenv
+from config import PALM_MODEL, PALM_TEMPERATURE, PALM_CANDIDATE_COUNT, PALM_TOP_K, PALM_TOP_P
 
 load_dotenv()
-
 
 API_KEY=os.getenv('PALM_API_KEY')
 
@@ -14,11 +14,11 @@ def ask_palm(context, query):
     
     defaults = {
         
-      'model': 'models/chat-bison-001',
-      'temperature': 0.2,
-      'candidate_count': 1,
-      'top_k': 40,
-      'top_p': 0.95,
+      'model': PALM_MODEL,
+      'temperature': PALM_TEMPERATURE,
+      'candidate_count': PALM_CANDIDATE_COUNT,
+      'top_k': PALM_TOP_K,
+      'top_p': PALM_TOP_P,
     }
     preprompt = """You are a helpful assistant, you will only use the provided CONTEXT to answer user questions.
     Read the given context before answering questions and think step by step. If you can not answer a user question based on 

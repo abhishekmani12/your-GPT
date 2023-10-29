@@ -22,6 +22,7 @@ from palmquery import ask_palm
 import chromadb
 from chromadb.config import Settings
 
+from config import SOURCE_CHUNKS, TOP_K, TOP_P, TEMPERATURE, REPEAT_PENALTY, CTX, MAX_TOKENS, BATCH_SIZE, GPT4ALL_BATCH_SIZE
 
 
 vectorstore_folder_path = "vectorstore"
@@ -40,7 +41,7 @@ LLAMA = [
 
 gpt4all_model = "MODELS/ggml-model-gpt4all-falcon-q4_0.bin" #convert to gguf - pending
 
-target_source_chunks = 3
+target_source_chunks = SOURCE_CHUNKS
 
 CHROMA_SETTINGS = Settings(
         persist_directory=vectorstore_folder_path,
@@ -94,13 +95,13 @@ def load_model(model_id, model_basename):
     kwargs = { 
         
         "model_path": model_path, 
-        "top_p":0.4,
-        "top_k":40,
-        "temperature":0.4,
-        "repeat_penalty":1.18,
-        "n_ctx":2048, 
-        "max_tokens": 4096, 
-        "n_batch": 128 }
+        "top_p":TOP_P,
+        "top_k":TOP_K,
+        "temperature":TEMPERATURE,
+        "repeat_penalty":REPEAT_PENALTY,
+        "n_ctx":CTX, 
+        "max_tokens": MAX_TOKENS, 
+        "n_batch": BATCH_SIZE }
         
     return LlamaCpp(**kwargs)
 
@@ -143,13 +144,13 @@ def get_pipe(model_type):
 
         gpt4all_llm = LlamaCpp(
                         model_path=gpt4all_model, 
-                        top_p=0.4,
-                        top_k=40,
-                        temperature=0.4,
-                        repeat_penalty=1.18,
-                        n_ctx=4096, 
-                        max_tokens=4096, 
-                        n_batch=512 
+                        top_p=TOP_P,
+                        top_k=TOP_K,
+                        temperature=TEMPERATURE,
+                        repeat_penalty=REPEAT_PENALTY,
+                        n_ctx=CTX, 
+                        max_tokens=MAX_TOKENS, 
+                        n_batch=GPT4ALL_BATCH_SIZE 
                         )
         
         return gpt4all_llm, db
@@ -174,16 +175,16 @@ def get_pipe(model_type):
     return RQA
 
 
-def get_answer(query, RQA=None, gpt4all=False, internet=False):
+def get_answer(query, RQA=None, gpt4all=False, palm=False):
     document_content={}  
     
     if query.strip() == "":
         return None
     
-    if internet and gpt4all:
+    if palm and gpt4all:
         return None
     
-    if internet or gpt4all:
+    if palm or gpt4all:
         
         db=RQA[1]
         
@@ -195,9 +196,8 @@ def get_answer(query, RQA=None, gpt4all=False, internet=False):
         for document in docs:
             context += document.page_content
         
-        print(context)
 
-        if internet:
+        if palm:
             answer=ask_palm(context, query)
         else:
             
