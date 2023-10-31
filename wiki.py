@@ -6,7 +6,13 @@ import wikipedia
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from config import USER_AGENT
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+from transformers import pipeline
 
+tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
+bert_model = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
+
+ner_nlp = pipeline("ner", model=bert_model, tokenizer=tokenizer, aggregation_strategy="simple")
 
 #!python -m spacy download en_core_web_sm #Execute on first run
 
@@ -20,22 +26,35 @@ base_url = 'https://api.wikimedia.org/core/v1/wikipedia/'
 endpoint = '/search/page'
 url = base_url + 'en' + endpoint
 
-def get_keywords(text, medical=False):
+def get_keywords(text, model, medical=False):
+    keywords = []
     
     if medical:
-        model="en_core_sci_lg"
+        type="en_core_sci_lg"
     else:
-        model="en_core_web_sm"
+        type="en_core_web_sm"
     
-    nlp = spacy.load(model)
-    doc = nlp(text)
-    keywords_obj=doc.ents
+    if model == "spacy":
     
-    string=str(keywords_obj)
-    keywords=string.replace("(","").replace(")","").split(",")
+        sm_nlp = spacy.load(type)
+        doc = sm_nlp(text)
+        keywords_obj=doc.ents
+        
+        string=str(keywords_obj)
+        keywords=string.replace("(","").replace(")","").split(",")
+        
+        keywords=list(filter(None, keywords))
     
-    keywords=list(filter(None, keywords))
-    
+    elif model == "bert":
+        raw_response = ner_nlp(text)
+        for w in raw_response:
+            word=w['word']
+
+            if word[0] == "#" and word[1] == "#":
+                keywords[-1] += word.replace('##','')
+            else:
+                keywords.append(word)
+
     return set(keywords)
 
 def wiki(keyword, limit):
@@ -94,9 +113,9 @@ def wiki(keyword, limit):
     return content
     
 
-def get_details(text, medical=False, limit=3):
+def get_details(text, model="spacy",medical=False, limit=3):
 
-    keywords=get_keywords(text, medical)
+    keywords=get_keywords(text, model, medical)
     
     if len(keywords) == 0:
         print("No keywords found")
