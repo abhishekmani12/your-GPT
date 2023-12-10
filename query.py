@@ -47,8 +47,7 @@ CHROMA_SETTINGS = Settings(
         persist_directory=vectorstore_folder_path,
         anonymized_telemetry=False
 )
-
-
+###############################################################################################################################################
 
 preprompt="""You are a helpful assistant, you will use the provided context to answer user questions.
 Read the given context before answering questions and think step by step. If you can not answer a user question based on 
@@ -175,33 +174,33 @@ def get_pipe(model_type):
     return RQA
 
 
-def get_answer(query, RQA=None, gpt4all=False, palm=False):
-    document_content={}  
+def get_answer(query=None, text=None, RQA=None, gpt4all=False, palm=False):
+    document_content={} 
+    answer=None
     
     if query.strip() == "":
         return None
-    
     if palm and gpt4all:
         return None
     
     if palm or gpt4all:
-        
-        db=RQA[1]
-        
-        docs = db.similarity_search(query, k=target_source_chunks)
-        context=""""""
-
-        start = time.time()
-        
-        for document in docs:
-            context += document.page_content
-        
+        if query and not text:
+            
+            db=RQA[1]
+            docs = db.similarity_search(query, k=target_source_chunks)
+            context=""""""
+    
+            start = time.time()
+            
+            for document in docs:
+                context += document.page_content
 
         if palm:
-            answer=ask_palm(context, query)
-        else:
-            
-            
+            if text:
+                answer = ask_palm(context=text, summary=True)
+            else:
+                answer=ask_palm(context, query)
+        else:            
             llm_chain = LLMChain(prompt=gpt4all_prompt, llm=RQA[0])
             answer=llm_chain.run(query)
             
@@ -215,6 +214,9 @@ def get_answer(query, RQA=None, gpt4all=False, palm=False):
         answer, docs = res['result'], res['source_documents']
             
         end = time.time()
+
+    if text and not query:
+        return answer time_taken
         
     for document in docs:
         document_content[document.metadata["source"]] = document.page_content
