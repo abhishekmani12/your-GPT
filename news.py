@@ -12,15 +12,15 @@ googlenews = GoogleNews(period='1d')
 googlenews = GoogleNews(encode='utf-8')
 
 
-def get_news_links(news_title): 
+def get_news_links(news_title):
 
     googlenews.get_news(news_title)
     encoded_links=googlenews.get_links()
     googlenews.clear()
-
     links=[]
+    i=0
     for enc_link in encoded_links:
-
+        i+=1
         enc_str = re.search(r'/([^/]+)\?', enc_link).group(1)
 
         padding = 4 - (len(enc_str) % 4)
@@ -28,21 +28,26 @@ def get_news_links(news_title):
 
         try:
             raw_str = base64.b64decode(pad_str)
-            links.append(re.findall(url_pattern, str(raw_str))[0])
+            links.append(re.findall(r"https://[^\\]+", str(raw_str))[0])
+            print(f"-- News Articles Collected: {i}", end="\r", flush=True)
         except:
             continue
-        
+
     return links
 
-def get_content(links):
+def get_news(news_title):
+
+    links=get_news_links(news_title)
 
     dates=[]
     urls=[]
     text=[]
     summaries=[]
-    
-    for link in links:
 
+    i=0
+    print("\n")
+    for link in links:
+        i+=1
         try:
             article = Article(link)
             article.download()
@@ -52,10 +57,11 @@ def get_content(links):
             text.append(article.text)
 
             article.nlp()
-            summaries.append(article.summary)
-
+            #summaries.append(article.summary)
             urls.append(link)
+            print(f"-- Processing: {i}", end="\r", flush=True)
         except:
             continue
 
-    return pd.DataFrame({'Date': dates, 'Url': urls, 'Text': text, 'Summary': summaries})
+    print("\n\n-- Completed")
+    return pd.DataFrame({'Date': dates, 'Text': text})
