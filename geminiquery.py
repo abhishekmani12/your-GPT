@@ -7,12 +7,11 @@ from config import GEM_MODEL, GEM_TEMPERATURE, GEM_MAX_TOKENS, GEM_TOP_K, GEM_TO
 load_dotenv()
 API_KEY=os.getenv('GEM_API_KEY')
 
-summary_preprompt = """You are a helpful assistant, Summarize the below text content into 10 points.
+summary_preprompt = """You are a helpful assistant, Summarize the below text content into 10 short points.
 These 10 points should cover most of the content but should be short and readable"""
 
 preprompt = """You are a helpful assistant that tries to answer the QUERY based on the provided CONTEXT.
-You can make inferences from the context and parse it and extract data inherently, you may even go beyond the context if needed, but do not make false facts.
-If you do not know the answer to the question then just inform the user."""
+You can make inferences from the context and parse it and extract data inherently and can use your own knowledge base"""
 
 def ask_gemini(context, query=None, summary=False):
 
@@ -65,7 +64,9 @@ def ask_gemini(context, query=None, summary=False):
     if summary:
         messages = [ f"""{prompt}
 
-                    TEXT CONTENT: {cleaned_context} """]
+                    TEXT CONTENT: {cleaned_context} 
+                    
+                    QUERY: Summarize the above text content into 10 short, readable points"""]
     else:
         messages = [ f"""{prompt}
 
@@ -76,15 +77,9 @@ def ask_gemini(context, query=None, summary=False):
     #messages.append("NEXT REQUEST")
 
     response = model.generate_content(messages)
-    match=True
-    if summary:
-        pattern = re.compile(r'here are 10[\s\S]*', re.IGNORECASE) #Pattern is too rigid
-        match = pattern.search(response.messages[len(response.text)-1]['content'])
 
-        if match:
-            extract = match.group(0)
-            return extract
-        else:
-            return "Please Retry", response
+    if response is None:
+
+        return "Please Retry"
     else:
-        return response
+        return response.text
