@@ -129,4 +129,4 @@ def get_details(text, model="spacy",medical=False, limit=3):
         print(key)
         details_dict[key]=wiki(key, limit)
     
-    return details_dict, keywords 
+    return details_dict, list(keywords) 

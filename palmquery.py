@@ -54,12 +54,14 @@ def ask_palm(context, query=None, summary=False):
     )
 
     if summary:
-        pattern = re.compile(r'here are 10[\s\S]*', re.IGNORECASE) #Pattern is too rigid
+        pattern = re.compile(r'here are [\s\S]*', re.IGNORECASE) #Pattern is too rigid
         match = pattern.search(response.messages[len(response.messages)-1]['content'])
         
         if match:    
+            print("match found")
             extract = match.group(0)
             return extract
+            
         else:
             return "Please Retry"
     else:

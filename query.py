@@ -216,7 +216,7 @@ def get_answer(query=None, text=None, RQA=None, gpt4all=False, palm=False):
         end = time.time()
 
     if text and not query:
-        return answer time_taken
+        return answer, time_taken
         
     for document in docs:
         document_content[document.metadata["source"]] = document.page_content
