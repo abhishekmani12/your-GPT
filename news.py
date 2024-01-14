@@ -35,7 +35,7 @@ def get_news_links(news_title):
 
     return links
 
-def get_news(news_title):
+def get_news(news_title, count = -1):
 
     links=get_news_links(news_title)
 
@@ -49,6 +49,7 @@ def get_news(news_title):
     for link in links:
         i+=1
         try:
+
             article = Article(link)
             article.download()
             article.parse()
@@ -60,6 +61,9 @@ def get_news(news_title):
             #summaries.append(article.summary)
             urls.append(link)
             print(f"-- Processing: {i}", end="\r", flush=True)
+
+            if i == count:
+                break
         except:
             continue
 
