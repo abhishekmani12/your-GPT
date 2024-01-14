@@ -3,7 +3,7 @@ import subprocess
 from tqdm import tqdm
 from doc2docx import convert
 import img2pdf
-import ocrmypdf
+from paddleocr import PaddleOCR,draw_ocr
 import pandas as pd
 import sweetviz
 
@@ -17,7 +17,7 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.embeddings import HuggingFaceInstructEmbeddings
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
 
-from config import emb_chunk_size, emb_chunk_overlap
+from config import EMB_CHUNK_SIZE, EMB_CHUNK_OVERLAP
 
 vectorstore_folder_path = "vectorstore"
 document_ingest_path = "documents"
@@ -37,8 +37,8 @@ ext2loader = {
     ".txt": (TextLoader, {"encoding": "utf8"}),
 }
 
-CHUNK_SIZE = emb_chunk_size
-CHUNK_OVERLAP = emb_chunk_overlap
+CHUNK_SIZE = EMB_CHUNK_SIZE
+CHUNK_OVERLAP = EMB_CHUNK_OVERLAP
 
 
 def analyze(path):
@@ -46,38 +46,34 @@ def analyze(path):
     try:
         df=pd.read_csv(path)
         my_report = sweetviz.analyze([df, "Train"])
-        my_report.show_html('Report.html')
-
+    
         return my_report
     
     except Exception as e:
         print("Error: ", e)
 
-def image2pdf(file_path):
-    
-    fname=file_path.rsplit("/")[-1].split(".")[0]
-    pdf_path=f"documents/{fname}.pdf"
-    
-    with open(pdf_path,"wb") as f:
-        f.write(img2pdf.convert(file_path))
-    
-    return pdf_path
-
-
 def ocr(file_path):
 
+    ocr = PaddleOCR(use_angle_cls=True, lang='en')
     fname=file_path.rsplit("/")[-1]
     ls=fname.rsplit(".")
-    
-    if ls[1] in ['jpg', 'jpeg', 'png']:
-        file_path=image2pdf(file_path)
-        
-    pdf_path=f"documents/OCR-{ls[0]}.pdf"
-    print(pdf_path)
-    ocrmypdf.ocr(file_path, pdf_path, deskew=True)
-    
-    return pdf_path
 
+    txt_path=f"documents/OCR-{ls[0]}.txt"
+    print(txt_path)
+
+    result = ocr.ocr(file_path, cls=True)
+
+    res=""
+    for idx in range(len(result[0])):
+        res += result[0][idx][1][0] + "\n"
+
+    if os.path.exists(txt_path):
+        os.remove(txt_path)
+    f=open(txt_path, "w")
+    f.write(res)
+    f.close()
+
+    return txt_path
 
 def load_document(file_path, existing_files):
     
