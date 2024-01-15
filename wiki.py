@@ -8,11 +8,12 @@ from tqdm import tqdm
 from config import USER_AGENT
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import pipeline
+from keybert import KeyBERT
 
-tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
-bert_model = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
+#tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
+#bert_model = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
 
-ner_nlp = pipeline("ner", model=bert_model, tokenizer=tokenizer, aggregation_strategy="simple")
+#ner_nlp = pipeline("ner", model=bert_model, tokenizer=tokenizer, aggregation_strategy="simple")
 
 #!python -m spacy download en_core_web_sm #Execute on first run
 
@@ -43,19 +44,20 @@ def get_keywords(text, model, medical=False):
         string=str(keywords_obj)
         keywords=string.replace("(","").replace(")","").split(",")
         
+        
         keywords=list(filter(None, keywords))
-    
-    elif model == "bert":
-        raw_response = ner_nlp(text)
-        for w in raw_response:
-            word=w['word']
+        keywords = list(map(lambda s: s.lstrip(" "), keywords))
 
-            if word[0] == "#" and word[1] == "#":
-                keywords[-1] += word.replace('##','')
-            else:
-                keywords.append(word)
+    elif model == "bert":
+
+        kw_model = KeyBERT()
+        keywords_set = kw_model.extract_keywords(text)
+
+        for k_set in keywords_set:
+            keywords.append(k_set[0])
 
     return set(keywords)
+
 
 def wiki(keyword, limit):
     
