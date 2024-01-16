@@ -15,7 +15,7 @@ model_option=st.sidebar.selectbox("Models", range(len(models)), format_func= lam
 
 st.sidebar.header("Ask queries based on your supplied text documents via a Vector Database")
 
-@st.cache_resource
+@st.cache_resource(show_spinner="Loading RAG Pipeline")
 def get_cache_rqa(model_type):
     return get_pipe(model_type)
 
@@ -42,6 +42,11 @@ with st.form('embed_form'):
                     embed(f.name, scanned=False)
         with wh.container():
                 st.success("Document Stored Successfully")
+        
+        st.cache_resource.clear()
+        st.cache_data.clear()
+
+        rqa = get_cache_rqa(model_type=model_type)
 
 #USER
                 
