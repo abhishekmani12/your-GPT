@@ -1,7 +1,11 @@
 from qdrant_client import QdrantClient
+from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.http.models import PointStruct
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from sentence_transformers import SentenceTransformer
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
 
+encoder = SentenceTransformer("hkunlp/instructor-large")
 CHUNK_SIZE=256
 CHUNK_OVERLAP=32
 
@@ -34,7 +38,7 @@ def split_document(file_path, existing_files=[]):
 
     document, fname = load_document(file_path, existing_files)
     if not document:
-        print(f"Vector Embeddings for FILE:{fname} already exists")
+        print(f"Vector Embeddings for FILE:'{fname}' already exists")
         return None, None
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
@@ -56,26 +60,38 @@ def qvdb_embed(db_path, collection, fpath):
   existing_docs=[]
 
   try:
-    list_docs = client.query(collection_name=collection, query_text="")
+    list_docs = client.search(
+    collection_name=collection,
+    query_vector=encoder.encode("").tolist())
+
   except ValueError:
-    print("Collection does not exist, creating new collection")
     exist=False
 
   if exist:
     existing_docs=[]
     for doc in list_docs:
-      existing_docs.append(doc.metadata.get('source'))
-
-  text, fname = split_document(fpath, existing_docs)
-  if text:
-    metadata = [{"source": fname}]
-
-    client.add(
-        collection_name=collection,
-        documents=[text],
-        metadata=metadata
+      existing_docs.append(doc.payload.get("source"))
+  else:
+    print(f"Creating Collection: {collection}")
+    client.create_collection(
+    collection_name=collection,
+    vectors_config=VectorParams(
+        size=encoder.get_sentence_embedding_dimension(),
+        distance=Distance.COSINE),
     )
 
+  text, fname = split_document(fpath, existing_docs)
+
+  if text:
+    info = client.upsert(
+    collection_name=collection,
+    wait=True,
+    points=[
+        PointStruct(id=1,vector=encoder.encode(text).tolist(), payload={"source": fname})
+      ]
+    )
+
+    print(info)
     print("Document Embedded and Stored in Vector DB")
 
   client.close()
