@@ -9,6 +9,7 @@ An internet free locally deployable GPT with a suite of text and data analayis/e
 ## Scripts:
 
 - `load.py`: Loads textual data, splits data into chunks, creates vector embeddings of these chunks and stores them in the vector database.
+- `qdb.py`: Test loading script which uses [qdrant](https://github.com/qdrant/qdrant-client) as a vector database
 - `query.py`: Text generation based on query from user and context provided from the database via similarity search.
 - `palmquery.py`: Extension script to call palm-API
 - `wiki.py`: Wikipedia Context generation script based on input sentence. Know more from my other [repo](https://github.com/abhishekmani12/Wiki-Content-Retriever)
