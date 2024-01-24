@@ -1,9 +1,10 @@
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.http.models import Distance, VectorParams, Batch
 from qdrant_client.http.models import PointStruct
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
+import numpy as np
 
 encoder = SentenceTransformer("hkunlp/instructor-large")
 CHUNK_SIZE=256
@@ -38,60 +39,74 @@ def split_document(file_path, existing_files=[]):
 
     document, fname = load_document(file_path, existing_files)
     if not document:
-        print(f"Vector Embeddings for FILE:'{fname}' already exists")
         return None, None
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
     split_text = text_splitter.split_documents(document)
 
-    text_string=""""""
-    for doc in split_text:
-      text_string += doc.page_content
+    payload=[]
+    content=[]
+    for docs in split_text:
+      payload.append({
+          'source' : docs.metadata['source'],
+          'content' : docs.page_content
+          })
+      content.append(docs.page_content)
 
-    print("Document Split")
-    return text_string, fname
+    return payload, content
 
 
-def qvdb_embed(db_path, collection, fpath):
+def qvdb_embed(db_path,fpath):
 
   client = QdrantClient(path=db_path)
+  collections = client.get_collections()
+  collection = fpath.split('.')[0].split('/')[-1]
 
-  exist=True
-  existing_docs=[]
-
-  try:
-    list_docs = client.search(
-    collection_name=collection,
-    query_vector=encoder.encode("").tolist())
-
-  except ValueError:
-    exist=False
-
-  if exist:
-    existing_docs=[]
-    for doc in list_docs:
-      existing_docs.append(doc.payload.get("source"))
-  else:
-    print(f"Creating Collection: {collection}")
+  if collection not in [c.name for c in collections.collections]:
+    print(f"Creating Collection: {fpath}")
     client.create_collection(
     collection_name=collection,
     vectors_config=VectorParams(
         size=encoder.get_sentence_embedding_dimension(),
         distance=Distance.COSINE),
     )
+  else:
+    print(f"Embeddings for Document: '{fpath}' already exists")
+    client.close()
+    return None
 
-  text, fname = split_document(fpath, existing_docs)
+  payload, content = split_document(fpath,[])
+  ids=np.arange(1,len(content)+1)
 
-  if text:
-    info = client.upsert(
-    collection_name=collection,
-    wait=True,
-    points=[
-        PointStruct(id=1,vector=encoder.encode(text).tolist(), payload={"source": fname})
-      ]
-    )
+  info = client.upsert(
+      collection_name = collection,
+      points = Batch(
 
-    print(info)
-    print("Document Embedded and Stored in Vector DB")
+          ids=ids.tolist(),
+          payloads = payload,
+          vectors=encoder.encode(content).tolist()
 
+      )
+  )
+
+  print(f"Document: '{fpath}' is embedded and stored in Vector DB")
   client.close()
+  return True
+
+def qvdb_search(db_path, collection, query):
+
+  client = QdrantClient(path=db_path)
+  collections = client.get_collections()
+
+  if collection not in [c.name for c in collections.collections]:
+    print(f"Collection: '{collection}' does not exist")
+    return None
+
+  results = client.search(
+      collection_name=collection,
+      query_vector=encoder.encode(query).tolist(),
+      limit=3,
+  )
+  client.close()
+  return results
+
