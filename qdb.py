@@ -108,5 +108,6 @@ def qvdb_search(db_path, collection, query):
       limit=3,
   )
   client.close()
-  return results
+  context = [text.payload['content'] for text in results]
+  return results, context
 
