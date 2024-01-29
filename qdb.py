@@ -4,11 +4,18 @@ from qdrant_client.http.models import PointStruct
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
+from load import ocr
 import numpy as np
+import os
 
-encoder = SentenceTransformer("hkunlp/instructor-large")
-CHUNK_SIZE=256
-CHUNK_OVERLAP=32
+from config import QEMB_CHUNK_SIZE, QEMB_CHUNK_OVERLAP
+
+encoder = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+#encoder = SentenceTransformer("hkunlp/instructor-large")
+#Requires pip install git+https://github.com/UKPLab/sentence-transformers.git
+
+CHUNK_SIZE=QEMB_CHUNK_SIZE
+CHUNK_OVERLAP=QEMB_CHUNK_OVERLAP
 
 ext2loader = {
     ".csv": (CSVLoader, {}),
@@ -55,12 +62,27 @@ def split_document(file_path, existing_files=[]):
 
     return payload, content
 
+def get_collections():
 
-def qvdb_embed(db_path,fpath):
+  path = "QDB/collection"
+  if os.path.exists(path):
+    items = os.listdir(path)
+
+    folders = [item for item in items if os.path.isdir(os.path.join(path, item))]
+
+    return folders
+  else:
+     return None
+  
+def qdb_embed(db_path,fpath, cname=None, scanned=False):
 
   client = QdrantClient(path=db_path)
   collections = client.get_collections()
-  collection = fpath.split('.')[0].split('/')[-1]
+  path,ext = fpath.split('.')
+  if cname:
+     collection = cname
+  else:
+    collection = path.split('/')[-1]
 
   if collection not in [c.name for c in collections.collections]:
     print(f"Creating Collection: {fpath}")
@@ -74,6 +96,10 @@ def qvdb_embed(db_path,fpath):
     print(f"Embeddings for Document: '{fpath}' already exists")
     client.close()
     return None
+
+  if scanned or ext in ['jpeg','jpg','png']:
+        fpath=ocr(fpath)
+        print("OCR Extraction Completed")
 
   payload, content = split_document(fpath,[])
   ids=np.arange(1,len(content)+1)
@@ -93,7 +119,7 @@ def qvdb_embed(db_path,fpath):
   client.close()
   return True
 
-def qvdb_search(db_path, collection, query):
+def qdb_search(db_path, collection, query):
 
   client = QdrantClient(path=db_path)
   collections = client.get_collections()
