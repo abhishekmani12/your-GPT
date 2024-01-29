@@ -14,6 +14,7 @@ from langchain import HuggingFacePipeline
 from langchain import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
+from qdb import qdb_search
 
 import os
 import time
@@ -174,7 +175,7 @@ def get_pipe(model_type):
     return RQA
 
 
-def get_answer(query=None, text=None, RQA=None, gpt4all=False, palm=False):
+def get_answer(query=None, text=None, RQA=None, gpt4all=False, palm=False, qdb=False):
     document_content={} 
     answer=None
     
@@ -185,7 +186,6 @@ def get_answer(query=None, text=None, RQA=None, gpt4all=False, palm=False):
     
     if palm or gpt4all:
         if query and not text:
-            
             db=RQA[1]
             docs = db.similarity_search(query, k=target_source_chunks)
             context=""""""
