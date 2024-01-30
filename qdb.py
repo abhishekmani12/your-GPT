@@ -4,15 +4,18 @@ from qdrant_client.http.models import PointStruct
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from langchain.document_loaders import CSVLoader, TextLoader, PyMuPDFLoader, Docx2txtLoader
+from InstructorEmbedding import INSTRUCTOR
 from load import ocr
 import numpy as np
 import os
 
 from config import QEMB_CHUNK_SIZE, QEMB_CHUNK_OVERLAP
 
-encoder = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+#encoder = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
 #encoder = SentenceTransformer("hkunlp/instructor-large")
 #Requires pip install git+https://github.com/UKPLab/sentence-transformers.git
+encoder = INSTRUCTOR('hkunlp/instructor-large')
+instruction = ["Represent the text content:"]
 
 CHUNK_SIZE=QEMB_CHUNK_SIZE
 CHUNK_OVERLAP=QEMB_CHUNK_OVERLAP
@@ -103,14 +106,14 @@ def qdb_embed(db_path,fpath, cname=None, scanned=False):
 
   payload, content = split_document(fpath,[])
   ids=np.arange(1,len(content)+1)
-
+  instruct_load=[[instruction[0], c] for c in content]
   info = client.upsert(
       collection_name = collection,
       points = Batch(
 
           ids=ids.tolist(),
           payloads = payload,
-          vectors=encoder.encode(content).tolist()
+          vectors=encoder.encode(instruct_load).tolist()
 
       )
   )
@@ -130,10 +133,9 @@ def qdb_search(db_path, collection, query):
 
   results = client.search(
       collection_name=collection,
-      query_vector=encoder.encode(query).tolist(),
+      query_vector=encoder.encode([['Represent the text content:',query]]).tolist()[0],
       limit=3,
   )
   client.close()
   context = [text.payload['content'] for text in results]
   return results, context
-
