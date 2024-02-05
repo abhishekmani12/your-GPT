@@ -1,5 +1,6 @@
 
 import streamlit as st
+st. set_page_config(layout="wide")
 
 import base64
 from pathlib import Path

@@ -13,7 +13,7 @@ dataset_path = st.file_uploader(" ", accept_multiple_files=False, type=['csv'])
 
 if dataset_path:
     fname = dataset_path.name.split(".")
-    REPORT_PATH = f"/reports/{fname[0]}.html"
+    REPORT_PATH = f"reports/{fname[0]}.html"
     with st.spinner("Analysing"):
         report=analyze(dataset_path)
         report.show_html(REPORT_PATH, layout='vertical', scale=1.0)
