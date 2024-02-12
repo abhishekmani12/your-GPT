@@ -12,7 +12,7 @@ model_type=os.getenv('model')
 folders=get_collections()
 collection_option=None
 db_path = 'QDB'
-
+ALT="palm"
 st.markdown("### Upload your docs and start querying")
 
 models=("Gemini", "Palm", "GPT4All", "Mistral - 7B", "Llama - 7B")
@@ -85,7 +85,7 @@ else:
         st.chat_message("user").markdown(prompt)
 
         with st.spinner("Loading ..."):
-            response=get_answer(query=prompt, RQA=rqa, palm=True)
+            response=get_answer(query=prompt, RQA=rqa, alt=ALT)
         response = f"LLM:\n {response[1]}"
         
         #LLM

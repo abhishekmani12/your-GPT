@@ -175,47 +175,43 @@ def get_pipe(model_type):
     return RQA
 
 
-def get_answer(query=None, text=None, RQA=None, gpt4all=False, palm=False, qdb=False):
+def get_answer(query=None, text=None, RQA=None, alt=None):
     document_content={} 
     answer=None
+    sflag=False
     
-    if query.strip() == "":
+    if not query and not text:
         return None
-    if palm and gpt4all:
-        return None
+    if text and not query:
+        sflag=True
+        alt="palm"
     
-    if palm or gpt4all:
+    if alt:
         if query and not text:
             db=RQA[1]
             docs = db.similarity_search(query, k=target_source_chunks)
             context=""""""
-    
             start = time.time()
             
             for document in docs:
                 context += document.page_content
+            text=context
 
-        if palm:
-            if text:
-                answer = ask_palm(context=text, summary=True)
-            else:
-                answer=ask_palm(context, query)
-        else:            
+        if alt == "palm":
+            answer = ask_palm(context=text, query=query, summary=sflag)
+        elif alt == "gpt4all":
             llm_chain = LLMChain(prompt=gpt4all_prompt, llm=RQA[0])
             answer=llm_chain.run(query)
             
         end=time.time()
 
     else:
-         
-        start = time.time()
-            
+        start = time.time()   
         res = RQA(query)
-        answer, docs = res['result'], res['source_documents']
-            
+        answer, docs = res['result'], res['source_documents'] 
         end = time.time()
 
-    if text and not query:
+    if sflag:
         return answer, time_taken
         
     for document in docs:
