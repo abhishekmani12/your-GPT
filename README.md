@@ -3,7 +3,7 @@ An internet free locally deployable GPT with a suite of text and data analayis/e
 
 - **LLMs:** Llama-7b, Mistral-7b, GPT4All, Palm, Gemini
 - **Embedding Model:** hkunlp/instructor-large
-- **Vector DB:** chromadb
+- **Vector DB:** chromadb, Qdrant
 - **Finetuning:** PEFT, BNB, QLORA
 
 ## Scripts:
