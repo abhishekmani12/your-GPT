@@ -31,7 +31,7 @@ https://github.com/abhishekmani12/your-GPT/assets/76105443/15292964-1672-49ae-aa
 ### Query with Documents (RAG):
 With 5 models (3 local and 2 internet based), embedded documents can be queried upon. Supports PDF, txt and word. Also has OCR support for wordless PDFs and images.
 
-https://github.com/abhishekmani12/your-GPT/assets/76105443/8859403d-5a94-484b-840f-8da0119651a6
+https://github.com/abhishekmani12/your-GPT/assets/76105443/09adf700-c560-488e-b482-04aacd352cfe
 
 ### Summarization:
 Summarizes any kind of input text into 10 readable points.
@@ -46,7 +46,3 @@ https://github.com/abhishekmani12/your-GPT/assets/76105443/ee6c473b-5c79-4090-8b
 ## Ongoing:
 - Implementation of NeMo guardrails for topical awareness.
 - Prototyping with Taipy for a production environment
-
-
-
-
